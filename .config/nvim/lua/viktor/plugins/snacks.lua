@@ -30,6 +30,12 @@ return {
 						},
 					},
 				},
+				grep = {
+					hidden = true,
+				},
+				files = {
+					hidden = true,
+				},
 			},
 		},
 		quickfile = { enabled = true },
