@@ -21,6 +21,7 @@ config.colors = {
 config.font = wezterm.font("MesloLGSNF")
 config.font_size = 11
 
+config.cursor_blink_rate = 0
 config.enable_tab_bar = false
 
 config.window_decorations = "RESIZE"
