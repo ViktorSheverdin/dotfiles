@@ -58,26 +58,27 @@ local uv = vim.uv or vim.loop
 local watchers = {}
 
 local function watch_buffer(bufnr)
-  local path = vim.api.nvim_buf_get_name(bufnr)
-  if path == "" or vim.fn.filereadable(path) ~= 1 then return end
-  if watchers[bufnr] then return end
+  local path = vim.api.nvim_buf_get_name(bufnr) -- get the file path for this buffer
+  if path == "" or vim.fn.filereadable(path) ~= 1 then return end -- skip unnamed or unreadable buffers
+  if watchers[bufnr] then return end -- already watching this buffer, skip
 
-  local handle = uv.new_fs_event()
-  if not handle then return end
-  watchers[bufnr] = handle
+  local handle = uv.new_fs_event()  -- create a new OS file system event handle
+  if not handle then return end      -- bail if the OS couldn't create a watcher
+  watchers[bufnr] = handle           -- store handle so we can stop it later
 
+  -- start watching the file; callback fires instantly when the OS detects a change
   handle:start(path, {}, vim.schedule_wrap(function(err, _, _)
     if not err and vim.api.nvim_buf_is_valid(bufnr) then
-      vim.cmd("checktime " .. bufnr)
+      vim.cmd("checktime " .. bufnr) -- tell nvim to re-read the file from disk
     end
   end))
 end
 
 local function unwatch_buffer(bufnr)
-  local handle = watchers[bufnr]
+  local handle = watchers[bufnr] -- look up the watcher for this buffer
   if handle then
-    handle:stop()
-    watchers[bufnr] = nil
+    handle:stop()              -- unregister the OS file system event
+    watchers[bufnr] = nil      -- free the reference
   end
 end
 
