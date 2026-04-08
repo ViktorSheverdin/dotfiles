@@ -38,13 +38,52 @@ opt.splitbelow = true -- split horizontal window to the bottom
 -- turn off swapfile
 opt.swapfile = false
 
--- auto-reload files changed outside of nvim (e.g. by Claude Code) - test 2
+-- auto-reload files changed outside of nvim (e.g. by Claude Code)
 opt.autoread = true
-vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+
+-- On focus/buffer switch (fallback for files not yet watched)
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
   pattern = "*",
   callback = function()
     if vim.fn.mode() ~= "c" then
       vim.cmd("checktime")
     end
   end,
+})
+
+-- Live file watching using OS-native events (inotify on Linux, FSEvents on macOS).
+-- Each buffer gets a watcher that fires instantly when the file changes on disk,
+-- triggering checktime to reload it — no polling, zero CPU overhead when idle.
+local uv = vim.uv or vim.loop
+local watchers = {}
+
+local function watch_buffer(bufnr)
+  local path = vim.api.nvim_buf_get_name(bufnr)
+  if path == "" or vim.fn.filereadable(path) ~= 1 then return end
+  if watchers[bufnr] then return end
+
+  local handle = uv.new_fs_event()
+  if not handle then return end
+  watchers[bufnr] = handle
+
+  handle:start(path, {}, vim.schedule_wrap(function(err, _, _)
+    if not err and vim.api.nvim_buf_is_valid(bufnr) then
+      vim.cmd("checktime " .. bufnr)
+    end
+  end))
+end
+
+local function unwatch_buffer(bufnr)
+  local handle = watchers[bufnr]
+  if handle then
+    handle:stop()
+    watchers[bufnr] = nil
+  end
+end
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+  callback = function(args) watch_buffer(args.buf) end,
+})
+vim.api.nvim_create_autocmd("BufDelete", {
+  callback = function(args) unwatch_buffer(args.buf) end,
 })
