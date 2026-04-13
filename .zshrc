@@ -116,3 +116,27 @@ _fzf_comprun() {
 
 export BAT_THEME=tokyonight_night
 alias cat="bat"
+
+# Alias y to use yazi
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+		builtin cd -- "$cwd"
+	fi
+	rm -f -- "$tmp"
+}
+
+
+# 1. Add `rgg` alias, go to `~/dotfiles`, run `rgg`, type `plugin` — see live matches with preview
+# 2. Run `rgg`, type `bindkey` — jump through all keybinding definitions across files
+# 3. Run `rgg` in a project, type a function name — see every usage with bat-highlighted context
+alias rgg='rg --color=always --line-number "" | fzf --ansi --delimiter=: --preview "bat --color=always {1} --highlight-line {2}" --preview-window "right:60%:+{2}-5"'
+
+# Fuzzy cd — fcd [root dir, default ~]
+fcd() {
+  local dir
+  dir=$(fd -t d . "${1:-$HOME}" | fzf --preview 'eza --tree --color=always {}')
+  [ -n "$dir" ] && cd "$dir"
+}
+
