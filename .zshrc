@@ -10,13 +10,30 @@ export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME="robbyrussell"
 
-# zsh-autosuggestions and zsh-syntax-highlighting are sourced manually below
-# (platform-specific paths), so they are excluded from the plugins array
-plugins=(git)
+# On macOS, clone plugins into oh-my-zsh custom dir:
+#   git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+#   git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+# Function to auto-install custom plugins
+install_plugin_if_not_exists() {
+    local plugin_name="$1"
+    local plugin_url="$2"
+    local plugin_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin_name"
+    if [ ! -d "$plugin_dir" ]; then
+        echo "Installing $plugin_name..."
+        git clone --depth 1 "$plugin_url" "$plugin_dir"
+    fi
+}
+
+# List your custom plugins here
+install_plugin_if_not_exists "zsh-autosuggestions" "https://github.com/zsh-users/zsh-autosuggestions"
+install_plugin_if_not_exists "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting"
+
+# Standard Oh My Zsh plugins list
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
-# ---- Detect OS ----
+# ---- Detect OS and source platform-specific tools ----
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS — resolve Homebrew prefix (Apple Silicon vs Intel)
   if [[ -x /opt/homebrew/bin/brew ]]; then
@@ -25,25 +42,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     BREW_PREFIX="/usr/local"
   fi
 
-  # zsh plugins
-  source "$BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-  source "$BREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-
-  # Powerlevel10k
   source "$BREW_PREFIX/share/powerlevel10k/powerlevel10k.zsh-theme"
-
-  # fzf shell integration (completion + key-bindings bundled)
   source "$BREW_PREFIX/opt/fzf/shell/completion.zsh"
   source "$BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
 else
-  # Linux
-  source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-  source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-  # Powerlevel10k
+  # Linux — original paths
   source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-
-  # fzf shell integration
   source /usr/share/fzf/completion.zsh
   source /usr/share/fzf/key-bindings.zsh
 fi
