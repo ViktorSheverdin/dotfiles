@@ -42,6 +42,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     BREW_PREFIX="/usr/local"
   fi
 
+  eval "$($BREW_PREFIX/bin/brew shellenv)"
+
   source "$BREW_PREFIX/share/powerlevel10k/powerlevel10k.zsh-theme"
   source "$BREW_PREFIX/opt/fzf/shell/completion.zsh"
   source "$BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"

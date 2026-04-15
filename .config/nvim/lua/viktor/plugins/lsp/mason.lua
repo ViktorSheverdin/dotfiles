@@ -36,10 +36,8 @@ return {
             ensure_installed = {
                 "prettier", -- prettier formatter
                 "stylua", -- lua formatter
-                "isort", -- python formatter
-                "black", -- python formatter
-                "pylint",
                 "eslint_d",
+                -- isort, black, pylint installed via pipx (brew install pipx)
             },
         },
         dependencies = {
