@@ -1,0 +1,26 @@
+# AWS
+.aws/
+.aws/**
+*.aws
+aws-credentials*
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Claude Code - only skills/ is tracked via stow
+.claude/sessions/
+.claude/history.jsonl
+.claude/cache/
+.claude/backups/
+.claude/file-history/
+.claude/shell-snapshots/
+.claude/session-env/
+.claude/paste-cache/
+.claude/tasks/
+.claude/downloads/
+.claude/plugins/
+.claude/policy-limits.json
+.claude/mcp-needs-auth-cache.json
