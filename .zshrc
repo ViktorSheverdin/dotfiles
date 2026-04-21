@@ -82,8 +82,10 @@ bindkey '^N' history-search-forward
 alias ls="eza --icons=always"
 
 # ---- TheFuck -----
-eval $(thefuck --alias)
-eval $(thefuck --alias fk)
+if command -v thefuck &>/dev/null; then
+  eval $(thefuck --alias)
+  eval $(thefuck --alias fk)
+fi
 
 # ---- Zoxide (better cd) ----
 eval "$(zoxide init zsh)"
