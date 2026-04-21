@@ -1,3 +1,5 @@
+local colorscript = vim.fn.exepath("colorscript")
+
 return {
 	enabled = true,
 	sections = {
@@ -5,7 +7,8 @@ return {
 		{
 			pane = 2,
 			section = "terminal",
-			cmd = "/usr/bin/colorscript -e square",
+			cmd = colorscript ~= "" and (colorscript .. " -e square") or nil,
+			enabled = colorscript ~= "",
 			height = 5,
 			padding = 1,
 		},

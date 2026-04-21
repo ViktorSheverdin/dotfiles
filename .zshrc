@@ -42,6 +42,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     BREW_PREFIX="/usr/local"
   fi
 
+  eval "$($BREW_PREFIX/bin/brew shellenv)"
+
   source "$BREW_PREFIX/share/powerlevel10k/powerlevel10k.zsh-theme"
   source "$BREW_PREFIX/opt/fzf/shell/completion.zsh"
   source "$BREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
@@ -80,8 +82,10 @@ bindkey '^N' history-search-forward
 alias ls="eza --icons=always"
 
 # ---- TheFuck -----
-eval $(thefuck --alias)
-eval $(thefuck --alias fk)
+if command -v thefuck &>/dev/null; then
+  eval $(thefuck --alias)
+  eval $(thefuck --alias fk)
+fi
 
 # ---- Zoxide (better cd) ----
 eval "$(zoxide init zsh)"
@@ -160,3 +164,7 @@ fcd() {
   dir=$(fd -t d . "${1:-$HOME}" | fzf --preview 'eza --tree --color=always {}')
   [ -n "$dir" ] && cd "$dir"
 }
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion

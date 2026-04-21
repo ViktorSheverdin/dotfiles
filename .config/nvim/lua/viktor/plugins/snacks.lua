@@ -5,7 +5,7 @@ return {
 	opts = {
 		bigfile = { enabled = true },
 		dashboard = require("viktor.plugins.snacks.dashboard"),
-		explorer = { enabled = true },
+		explorer = { enabled = true, hidden = true, ignored = true },
 		indent = {
 			enabled = true,
 			indent = {
@@ -26,7 +26,7 @@ return {
 				explorer = {
 					layout = {
 						layout = {
-							width = 20,
+							width = 35,
 						},
 					},
 				},
