@@ -25,3 +25,4 @@ aws-credentials*
 .claude/mcp-needs-auth-cache.json
 .claude/settings.local.json
 .claude/plugins/marketplaces/
+.claude/pr-screenshots/
