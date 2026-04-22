@@ -10,7 +10,7 @@ aws-credentials*
 *.pem
 *.key
 
-# Claude Code - track: skills/, settings.json, plugins/known_marketplaces.json
+# Claude Code - track: skills/, commands/, plugins/desired_plugins.json
 .claude/sessions/
 .claude/history.jsonl
 .claude/cache/
@@ -23,6 +23,9 @@ aws-credentials*
 .claude/downloads/
 .claude/policy-limits.json
 .claude/mcp-needs-auth-cache.json
+.claude/settings.json
 .claude/settings.local.json
 .claude/plugins/marketplaces/
+.claude/plugins/known_marketplaces.json
+.claude/plugins/installed_plugins.json
 .claude/pr-screenshots/
