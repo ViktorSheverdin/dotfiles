@@ -1,44 +1,20 @@
 #!/bin/bash
-# Bootstrap Claude Code plugins from dotfiles config
-# Run after stowing dotfiles on a new machine
-#
-# Reads:
-#   ~/.claude/plugins/known_marketplaces.json  - marketplace repos to register
-#   ~/.claude/plugins/desired_plugins.json     - plugins to install
+# Bootstrap Claude Code plugins from dotfiles
+# Reads: ~/.claude/plugins/desired_plugins.json
+# Installs any missing plugins and registers their marketplaces as needed.
 #
 # Usage: ./scripts/claude-bootstrap.sh
 
 set -e
 
-MARKETPLACES_FILE="$HOME/.claude/plugins/known_marketplaces.json"
 PLUGINS_FILE="$HOME/.claude/plugins/desired_plugins.json"
 
-# --- Marketplaces ---
-
-if [ ! -f "$MARKETPLACES_FILE" ]; then
-    echo "Error: $MARKETPLACES_FILE not found. Run 'stow .' from your dotfiles first."
-    exit 1
-fi
-
-echo "==> Registering marketplaces..."
-for repo in $(jq -r '.[].source.repo' "$MARKETPLACES_FILE"); do
-    echo "  Adding marketplace: $repo"
-    claude plugin marketplace add "$repo" 2>/dev/null || true
-done
-
-echo "==> Updating marketplace catalogs..."
-claude plugin marketplace update
-
-# --- Plugins ---
-
 if [ ! -f "$PLUGINS_FILE" ]; then
-    echo "No desired_plugins.json found, skipping plugin installation."
+    echo "No desired_plugins.json found at $PLUGINS_FILE. Nothing to do."
     exit 0
 fi
 
-echo ""
-echo "==> Checking desired plugins..."
-
+installed_file="$HOME/.claude/plugins/installed_plugins.json"
 plugin_count=$(jq length "$PLUGINS_FILE")
 installed=0
 skipped=0
@@ -49,24 +25,23 @@ for i in $(seq 0 $((plugin_count - 1))); do
     source=$(jq -r ".[$i].source" "$PLUGINS_FILE")
     plugin_id="${name}@${marketplace}"
 
-    # Register the marketplace if it's not already one of the known ones
-    if ! jq -e ".[\"$marketplace\"]" "$MARKETPLACES_FILE" > /dev/null 2>&1; then
-        echo "  Registering marketplace for $plugin_id: $source"
-        claude plugin marketplace add "$source" 2>/dev/null || true
-        claude plugin marketplace update 2>/dev/null || true
+    # Skip if already installed
+    if [ -f "$installed_file" ] && jq -e ".plugins[\"$plugin_id\"]" "$installed_file" > /dev/null 2>&1; then
+        echo "[skip] $plugin_id already installed"
+        skipped=$((skipped + 1))
+        continue
     fi
 
-    # Check if already installed
-    installed_file="$HOME/.claude/plugins/installed_plugins.json"
-    if [ -f "$installed_file" ] && jq -e ".plugins[\"$plugin_id\"]" "$installed_file" > /dev/null 2>&1; then
-        echo "  [skip] $plugin_id already installed"
-        skipped=$((skipped + 1))
-    else
-        echo "  [install] $plugin_id"
-        claude plugin install "$plugin_id"
-        installed=$((installed + 1))
+    # Register marketplace if not already registered
+    if ! claude plugin marketplace list 2>/dev/null | grep -q "^  ❯ $marketplace$"; then
+        echo "[marketplace] registering $marketplace ($source)"
+        claude plugin marketplace add "$source" 2>/dev/null || true
     fi
+
+    echo "[install] $plugin_id"
+    claude plugin install "$plugin_id"
+    installed=$((installed + 1))
 done
 
 echo ""
-echo "Done. Installed: $installed, Already present: $skipped"
+echo "Done. Installed: $installed, already present: $skipped"
