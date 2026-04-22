@@ -8,5 +8,25 @@
     "name": "code-review",
     "marketplace": "claude-plugins-official",
     "source": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "superpowers",
+    "marketplace": "claude-plugins-official",
+    "source": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "lua-lsp",
+    "marketplace": "claude-plugins-official",
+    "source": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "pyright-lsp",
+    "marketplace": "claude-plugins-official",
+    "source": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "typescript-lsp",
+    "marketplace": "claude-plugins-official",
+    "source": "anthropics/claude-plugins-official"
   }
 ]
