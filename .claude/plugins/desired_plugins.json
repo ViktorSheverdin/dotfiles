@@ -1,0 +1,12 @@
+[
+  {
+    "name": "caveman",
+    "marketplace": "caveman",
+    "source": "JuliusBrussee/caveman"
+  },
+  {
+    "name": "code-review",
+    "marketplace": "claude-plugins-official",
+    "source": "anthropics/claude-plugins-official"
+  }
+]
