@@ -1,4 +1,20 @@
 local keymap = vim.keymap -- for conciseness
+
+vim.api.nvim_create_user_command("LspRestart", function(opts)
+    local filter = opts.args ~= "" and { name = opts.args } or nil
+    local clients = vim.lsp.get_clients(filter)
+    if #clients == 0 then
+        vim.notify("LspRestart: no matching clients", vim.log.levels.WARN)
+        return
+    end
+    for _, c in ipairs(clients) do
+        vim.lsp.stop_client(c.id)
+    end
+    vim.defer_fn(function()
+        vim.cmd("edit")
+    end, 200)
+end, { nargs = "?", desc = "Restart LSP client(s)" })
+
 vim.api.nvim_create_autocmd("LspAttach", {
     group = vim.api.nvim_create_augroup("UserLspConfig", {}),
     callback = function(ev)

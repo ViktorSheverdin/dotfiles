@@ -251,7 +251,24 @@ If there are no uncertainties: omit that section entirely. Do not say "no uncert
 
 ## Phase 5: Branch Setup
 
-Use `superpowers:using-git-worktrees` to create an isolated workspace.
+**Always start from an up-to-date main branch.** Determine the project's main
+branch (usually `main`, sometimes `dev` or `master` — check git remote HEAD,
+the project's CLAUDE.md, or the gitStatus context). Then:
+
+1. Verify clean working tree (`git status`). If dirty, surface and ask before
+   proceeding — never stash silently.
+2. `git checkout <main-branch>`
+3. `git pull --ff-only origin <main-branch>` — abort and ask if non-fast-forward.
+4. Create the new branch off the freshly-pulled main:
+   `git checkout -b <branch-name>`
+
+Never branch off the current branch when it isn't main. The current branch
+may be a stale feature branch from a prior ticket and would carry unrelated
+in-flight work into the new PR.
+
+Use `superpowers:using-git-worktrees` if isolation from the working copy is
+needed (long-running parallel work, conflicting deps). Otherwise the plain
+`checkout -b` flow above is sufficient.
 
 Branch naming:
 - Feature: `feat/[TICKET-ID]-[short-slug]`
@@ -351,10 +368,11 @@ Pure backend, config-only, and types-only changes: skip silently.
 curl -s -o /dev/null -w "%{http_code}" [devServerUrl] 2>/dev/null
 ```
 
-If server is not running, tell the user:
+- HTTP 200 → server already running. Proceed silently. Do NOT start another instance.
+- Anything else → tell the user:
   "Dev server isn't running. Start it with `[devServerStartCommand]` and confirm,
    or type 'skip' to skip screenshots."
-Wait for response.
+  Wait for response. Never run `devServerStartCommand` yourself.
 
 **Navigate to the changed UI:**
 Determine the route from: router files, component tree, ticket description, design context.
@@ -438,6 +456,7 @@ Select the entry format from `./bragdoc-templates.md` based on the ticket tier.
 ## Standing Rules
 
 - Never commit or push to main/master — always use the feature branch
+- Always branch off a freshly-pulled main (never off the currently checked-out branch)
 - Never push without explicit user confirmation
 - Never post PR comments without user approval
 - Never re-fetch Figma, standards, or ticket data after Phase 3
