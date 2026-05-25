@@ -8,7 +8,7 @@ vim.api.nvim_create_user_command("LspRestart", function(opts)
         return
     end
     for _, c in ipairs(clients) do
-        vim.lsp.stop_client(c.id)
+        c:stop()
     end
     vim.defer_fn(function()
         vim.cmd("edit")
