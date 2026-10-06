@@ -28,5 +28,10 @@
     "name": "typescript-lsp",
     "marketplace": "claude-plugins-official",
     "source": "anthropics/claude-plugins-official"
+  },
+  {
+    "name": "procurify-incident-review",
+    "marketplace": "procurify",
+    "source": "procurify/plugin-marketplace"
   }
 ]
