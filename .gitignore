@@ -10,24 +10,5 @@ aws-credentials*
 *.pem
 *.key
 
-# Claude Code - track: skills/, commands/, plugins/desired_plugins.json
-.claude/sessions/
-.claude/history.jsonl
-.claude/cache/
-.claude/backups/
-.claude/file-history/
-.claude/shell-snapshots/
-.claude/session-env/
-.claude/paste-cache/
-.claude/tasks/
-.claude/downloads/
-.claude/policy-limits.json
-.claude/mcp-needs-auth-cache.json
-.claude/settings.json
-.claude/settings.local.json
-.claude/plugins/marketplaces/
-.claude/plugins/known_marketplaces.json
-.claude/plugins/installed_plugins.json
-.claude/pr-screenshots/
-# Skills synced from the work account - never commit
-.claude/skills/synced/
+# Claude Code local files
+/.claude/
