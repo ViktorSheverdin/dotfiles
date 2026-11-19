@@ -36,7 +36,9 @@ return {
 				"jay-babu/mason-nvim-dap.nvim",
 				dependencies = { "williamboman/mason.nvim" },
 				opts = {
-					ensure_installed = { "python", "js", "delve" },
+					-- delve is built with `go install`; skip it where Go is missing
+					ensure_installed = vim.fn.executable("go") == 1 and { "python", "js", "delve" }
+						or { "python", "js" },
 					automatic_installation = true,
 				},
 			},

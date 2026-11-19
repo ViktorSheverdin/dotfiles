@@ -29,3 +29,5 @@ aws-credentials*
 .claude/plugins/known_marketplaces.json
 .claude/plugins/installed_plugins.json
 .claude/pr-screenshots/
+# Skills synced from the work account - never commit
+.claude/skills/synced/
