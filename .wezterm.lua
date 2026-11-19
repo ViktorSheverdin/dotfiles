@@ -4,6 +4,34 @@ local wezterm = require("wezterm")
 -- This will hold the configuration.
 local config = wezterm.config_builder()
 
+local window_titles = {}
+
+wezterm.on("format-window-title", function(tab, pane, tabs)
+	local title = window_titles[tab.window_id]
+	if title then
+		return title
+	end
+
+	local zoom = pane.is_zoomed and "[Z] " or ""
+	local index = #tabs > 1 and string.format("[%d/%d] ", tab.tab_index + 1, #tabs) or ""
+	return zoom .. index .. pane.title
+end)
+
+config.keys = {
+	{
+		key = "F2",
+		mods = "CTRL|SHIFT",
+		action = wezterm.action.PromptInputLine {
+			description = "Name this window (leave blank to reset)",
+			action = wezterm.action_callback(function(window, _, title)
+				if title ~= nil then
+					window_titles[window:mux_window():window_id()] = title ~= "" and title or nil
+				end
+			end),
+		},
+	},
+}
+
 -- This is where you actually apply your config choices
 
 config.colors = {
