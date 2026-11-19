@@ -42,18 +42,57 @@ opt.clipboard:append("unnamedplus") -- use system clipboard as default register
 -- currently attached over SSH. tmux itself refreshes its *session* env on
 -- each attach (see `update-environment`), so when the pane env looks clean
 -- we fall back to asking tmux directly.
-local function is_ssh()
-  if vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.SSH_CLIENT then
-    return true
+-- Pull SSH_CONNECTION from the pane env, or (when it's stale/absent there)
+-- from tmux's session env. Either source can be stale: a shell spawned before
+-- you SSH'd in, or a tmux server restored by tmux-resurrect/continuum, keeps a
+-- value that no longer reflects a live connection.
+local function ssh_connection_string()
+  if vim.env.SSH_CONNECTION then
+    return vim.env.SSH_CONNECTION
   end
   if vim.env.TMUX then
     local out = vim.fn.system("tmux show-environment SSH_CONNECTION 2>/dev/null")
     -- Present and not unset (tmux prefixes unset vars with "-")
-    if out:match("^SSH_CONNECTION=") then
-      return true
-    end
+    return out:match("^SSH_CONNECTION=([^\n]+)")
   end
-  return false
+  return nil
+end
+
+-- True only when a *live* inbound SSH connection backs this session. A bare
+-- SSH_CONNECTION isn't trusted on its own — we confirm the socket it names is
+-- actually ESTABLISHED, so a stale value can't flip us onto OSC 52 and quietly
+-- break local pbcopy yanks.
+local function is_ssh()
+  -- SSH_TTY is set per login shell and points at a real pty. If it's present
+  -- and the device still exists, we're unquestionably in a live SSH session.
+  -- (Not propagated through tmux's update-environment, so it only helps the
+  -- no-tmux case — hence the SSH_CONNECTION check below.)
+  if vim.env.SSH_TTY and vim.uv.fs_stat(vim.env.SSH_TTY) then
+    return true
+  end
+
+  local conn = ssh_connection_string()
+  if not conn then
+    return false
+  end
+
+  -- SSH_CONNECTION = "<client_ip> <client_port> <server_ip> <server_port>".
+  local client_ip, client_port, server_ip, server_port =
+    conn:match("^(%S+)%s+(%d+)%s+(%S+)%s+(%d+)$")
+  if not server_port then
+    return false
+  end
+
+  -- Verify the terminal sits behind a matching ESTABLISHED socket. Without
+  -- lsof we can't check, so fall back to trusting the variable (old behavior).
+  if vim.fn.executable("lsof") ~= 1 then
+    return true
+  end
+  local out = vim.fn.system(
+    string.format("lsof -nP -iTCP@%s:%s -sTCP:ESTABLISHED 2>/dev/null", server_ip, server_port)
+  )
+  -- Match the exact peer so an unrelated connection can't fool us.
+  return out:find(client_ip .. ":" .. client_port, 1, true) ~= nil
 end
 
 if is_ssh() then
@@ -95,6 +134,7 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
 -- triggering checktime to reload it — no polling, zero CPU overhead when idle.
 local uv = vim.uv or vim.loop
 local watchers = {}
+local unwatch_buffer -- forward declaration (watch_buffer re-arms via it)
 
 local function watch_buffer(bufnr)
   local path = vim.api.nvim_buf_get_name(bufnr) -- get the file path for this buffer
@@ -106,17 +146,25 @@ local function watch_buffer(bufnr)
   watchers[bufnr] = handle           -- store handle so we can stop it later
 
   -- start watching the file; callback fires instantly when the OS detects a change
-  handle:start(path, {}, vim.schedule_wrap(function(err, _, _)
-    if not err and vim.api.nvim_buf_is_valid(bufnr) then
-      vim.cmd("checktime " .. bufnr) -- tell nvim to re-read the file from disk
+  handle:start(path, {}, vim.schedule_wrap(function(err, _, events)
+    if err or not vim.api.nvim_buf_is_valid(bufnr) then return end
+    -- pcall: checktime throws E211 if the file was deleted meanwhile
+    pcall(vim.cmd, "checktime " .. bufnr) -- tell nvim to re-read the file from disk
+    -- Atomic saves (write temp file + rename, as Claude Code/formatters do)
+    -- replace the inode, which silently kills this watcher. Re-arm it.
+    if events and events.rename and watchers[bufnr] == handle then
+      unwatch_buffer(bufnr)
+      watch_buffer(bufnr)
     end
   end))
 end
 
-local function unwatch_buffer(bufnr)
+function unwatch_buffer(bufnr)
   local handle = watchers[bufnr] -- look up the watcher for this buffer
   if handle then
     handle:stop()              -- unregister the OS file system event
+    -- close() releases the libuv handle; stop() alone leaks it forever
+    if not handle:is_closing() then handle:close() end
     watchers[bufnr] = nil      -- free the reference
   end
 end
@@ -124,6 +172,6 @@ end
 vim.api.nvim_create_autocmd("BufReadPost", {
   callback = function(args) watch_buffer(args.buf) end,
 })
-vim.api.nvim_create_autocmd("BufDelete", {
+vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
   callback = function(args) unwatch_buffer(args.buf) end,
 })

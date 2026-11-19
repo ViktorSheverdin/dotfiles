@@ -1,2 +1,5 @@
 require("viktor.core.keymap")
+require("viktor.core.dap-keymap")
 require("viktor.core.options")
+require("viktor.core.lsp-idle")
+require("viktor.core.mem-guard")

@@ -88,7 +88,7 @@ if command -v thefuck &>/dev/null; then
 fi
 
 # ---- Zoxide (better cd) ----
-eval "$(zoxide init zsh)"
+# init lives at the end of this file — zoxide requires it last
 alias cd="z"
 
 alias p="pnpm"
@@ -165,6 +165,32 @@ fcd() {
   [ -n "$dir" ] && cd "$dir"
 }
 
+# ---- Memory ----
+
+# memtop — RAM per program (all processes of same name summed), biggest first
+memtop() {
+  free -h
+  echo
+  ps -eo rss=,comm= | awk '{r=$1; $1=""; m[substr($0,2)]+=r} END {for (k in m) printf "%8.0f MB  %s\n", m[k]/1024, k}' \
+    | sort -rn | head -${1:-15}
+}
+
+# capped — run a command with a hard RAM ceiling (default 4G).
+# Over the soft limit (90%) the kernel squeezes it into swap; over the hard
+# limit only THIS command is killed, not your desktop.
+#   capped npm run dev          capped 6G pnpm build
+capped() {
+  local max=4G
+  [[ "$1" =~ ^[0-9]+[GM]$ ]] && { max=$1; shift; }
+  local num=${max%?} unit=${max: -1}
+  systemd-run --user --scope --quiet --collect \
+    -p MemoryHigh=$(( num * 9 / 10 ))$unit -p MemoryMax=$max -p MemorySwapMax=2G \
+    -- "$@"
+}
+
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# ---- Zoxide init (must be last) ----
+eval "$(zoxide init zsh)"

@@ -1,0 +1,21 @@
+# earlyoom: userspace OOM killer that acts BEFORE the system freezes.
+#
+# Why: the kernel's own OOM killer only fires when memory is truly exhausted,
+# and by then the desktop has been thrashing for minutes (that's the "freeze,
+# hard reboot" experience). earlyoom watches available RAM + free swap and
+# kills the single worst process early, with a desktop notification.
+#
+# Installed by scripts/memory-setup.sh -> /etc/default/earlyoom
+# Logs:  journalctl -u earlyoom -f
+#
+#   -m 5,3      act when available RAM < 5% (~1.6G): SIGTERM at 5%, SIGKILL at 3%
+#   -s 10,5     ...AND free swap < 10% (both must be true, so zram gets used first)
+#   -r 3600     log memory report once an hour (not every minute)
+#   -n          desktop notification on kill (via systembus-notify)
+#   --prefer    kill these first: dev servers / tsserver (node), browser tabs, Electron
+#   --avoid     never kill these: desktop session, terminal, tmux, editor
+#
+# Names are matched against the 15-char process name (see `ps -eo comm`).
+# No spaces/quotes allowed: systemd splits $EARLYOOM_ARGS on whitespace, so
+# '.' stands in for the space in "Isolated Web Co".
+EARLYOOM_ARGS="-m 5,3 -s 10,5 -r 3600 -n --prefer ^(node|Isolated.Web.Co|Web.Content|chrome|Discord|electron|clamd)$ --avoid ^(gnome-shell|gdm.*|Xwayland|systemd.*|dbus-.*|pipewire.*|wireplumber|wezterm-gui|tmux.*|nvim|sshd|zsh)$"
