@@ -54,6 +54,18 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end,
 })
 
+-- Cap tsserver's heap. Without a cap Node lets it grow to ~4G on big repos
+-- (chief-suite-app hit 1.6-2.5G and kept climbing). If it hits the cap,
+-- tsserver restarts instead of eating the machine; run :LspRestart if needed.
+-- Automatic typing acquisition spawns an extra typingsInstaller process that
+-- downloads @types into a global cache; projects already ship their own types.
+vim.lsp.config("ts_ls", {
+    init_options = {
+        maxTsServerMemory = 3072,
+        disableAutomaticTypingAcquisition = true,
+    },
+})
+
 -- vim.lsp.inlay_hint.enable(true)
 
 local severity = vim.diagnostic.severity

@@ -134,6 +134,7 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
 -- triggering checktime to reload it — no polling, zero CPU overhead when idle.
 local uv = vim.uv or vim.loop
 local watchers = {}
+local unwatch_buffer -- forward declaration (watch_buffer re-arms via it)
 
 local function watch_buffer(bufnr)
   local path = vim.api.nvim_buf_get_name(bufnr) -- get the file path for this buffer
@@ -145,17 +146,25 @@ local function watch_buffer(bufnr)
   watchers[bufnr] = handle           -- store handle so we can stop it later
 
   -- start watching the file; callback fires instantly when the OS detects a change
-  handle:start(path, {}, vim.schedule_wrap(function(err, _, _)
-    if not err and vim.api.nvim_buf_is_valid(bufnr) then
-      vim.cmd("checktime " .. bufnr) -- tell nvim to re-read the file from disk
+  handle:start(path, {}, vim.schedule_wrap(function(err, _, events)
+    if err or not vim.api.nvim_buf_is_valid(bufnr) then return end
+    -- pcall: checktime throws E211 if the file was deleted meanwhile
+    pcall(vim.cmd, "checktime " .. bufnr) -- tell nvim to re-read the file from disk
+    -- Atomic saves (write temp file + rename, as Claude Code/formatters do)
+    -- replace the inode, which silently kills this watcher. Re-arm it.
+    if events and events.rename and watchers[bufnr] == handle then
+      unwatch_buffer(bufnr)
+      watch_buffer(bufnr)
     end
   end))
 end
 
-local function unwatch_buffer(bufnr)
+function unwatch_buffer(bufnr)
   local handle = watchers[bufnr] -- look up the watcher for this buffer
   if handle then
     handle:stop()              -- unregister the OS file system event
+    -- close() releases the libuv handle; stop() alone leaks it forever
+    if not handle:is_closing() then handle:close() end
     watchers[bufnr] = nil      -- free the reference
   end
 end
@@ -163,6 +172,6 @@ end
 vim.api.nvim_create_autocmd("BufReadPost", {
   callback = function(args) watch_buffer(args.buf) end,
 })
-vim.api.nvim_create_autocmd("BufDelete", {
+vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
   callback = function(args) unwatch_buffer(args.buf) end,
 })

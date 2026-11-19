@@ -24,7 +24,7 @@ config.font_size = 11
 config.cursor_blink_rate = 0
 config.enable_tab_bar = false
 
-config.window_decorations = "RESIZE"
+config.window_decorations = "NONE"
 -- config.adjust_window_size_when_changing_font_size = false
 config.window_padding = {
 	bottom = 0,

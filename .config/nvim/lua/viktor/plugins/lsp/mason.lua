@@ -12,6 +12,7 @@ return {
                 "graphql",
                 "prismals",
                 "pyright",
+                "gopls",
             },
         },
         dependencies = {
@@ -37,6 +38,7 @@ return {
                 "prettier", -- prettier formatter
                 "stylua", -- lua formatter
                 "eslint_d",
+                "goimports", -- go formatter + auto add/remove imports
                 -- isort, black, pylint installed via pipx (brew install pipx)
             },
         },

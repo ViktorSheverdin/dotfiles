@@ -25,6 +25,10 @@ return {
 			"query",
 			"vimdoc",
 			"c",
+			"go",
+			"gomod",
+			"gosum",
+			"gowork",
 		})
 
 		-- enable highlight + indent per filetype (now uses Neovim core APIs)
